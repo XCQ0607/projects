@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音合成</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="text"], select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        .slider-container {
+            margin-top: 10px;
+        }
+        .slider-container label {
+            display: flex;
+            justify-content: space-between;
+        }
+        #audioPlayer {
+            margin-top: 20px;
+        }
+        #history {
+            margin-top: 20px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .history-item button {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>语音合成</h1>
+<form id="ttsForm">
+    <label for="text">文本内容:</label>
+    <input type="text" id="text" name="text" required>
+
+    <label for="voice">语音名称:</label>
+    <select id="voice" name="voice">
+        <option value="zh-CN-XiaoxiaoMultilingualNeural">晓晓 多语言</option>
+        <option value="zh-CN-XiaoxiaoNeural">晓晓</option>
+        <option value="zh-CN-YunxiNeural">云希</option>
+        <option value="zh-CN-YunjianNeural">云健</option>
+        <option value="zh-CN-XiaoyiNeural">晓伊</option>
+        <option value="zh-CN-YunyangNeural">云扬</option>
+        <option value="zh-CN-XiaochenNeural">晓辰</option>
+        <option value="zh-CN-XiaohanNeural">晓涵</option>
+        <option value="zh-CN-XiaomengNeural">晓梦</option>
+        <option value="zh-CN-XiaomoNeural">晓墨</option>
+        <option value="zh-CN-XiaoqiuNeural">晓秋</option>
+        <option value="zh-CN-XiaorouNeural">晓柔</option>
+        <option value="zh-CN-XiaoruiNeural">晓睿</option>
+        <option value="zh-CN-XiaoshuangNeural">晓双</option>
+        <option value="zh-CN-XiaoyanNeural">晓颜</option>
+        <option value="zh-CN-XiaoyouNeural">晓悠</option>
+        <option value="zh-CN-XiaozhenNeural">晓甄</option>
+        <option value="zh-CN-YunfengNeural">云枫</option>
+        <option value="zh-CN-YunhaoNeural">云皓</option>
+        <option value="zh-CN-YunjieNeural">云杰</option>
+        <option value="zh-CN-YunxiaNeural">云夏</option>
+        <option value="zh-CN-YunyeNeural">云野</option>
+        <option value="zh-CN-YunzeNeural">云泽</option>
+        <option value="zh-CN-YunfanMultilingualNeural">Yunfan 多语言</option>
+        <option value="zh-CN-YunxiaoMultilingualNeural">Yunxiao 多语言</option>
+        <option value="zh-CN-guangxi-YunqiNeural">云奇 广西</option>
+        <option value="zh-CN-henan-YundengNeural">云登</option>
+        <option value="zh-CN-liaoning-XiaobeiNeural">晓北 辽宁</option>
+        <option value="zh-CN-liaoning-YunbiaoNeural">云彪 辽宁</option>
+        <option value="zh-CN-shaanxi-XiaoniNeural">晓妮</option>
+        <option value="zh-CN-shandong-YunxiangNeural">云翔</option>
+        <option value="zh-CN-sichuan-YunxiNeural">云希 四川</option>
+        <option value="zh-HK-HiuMaanNeural">曉曼</option>
+        <option value="zh-HK-WanLungNeural">雲龍</option>
+        <option value="zh-HK-HiuGaaiNeural">曉佳</option>
+        <option value="zh-TW-HsiaoChenNeural">曉臻</option>
+        <option value="zh-TW-YunJheNeural">雲哲</option>
+        <option value="zh-TW-HsiaoYuNeural">曉雨</option>
+    </select>
+
+    <div class="slider-container">
+        <label for="rate">语速: <span id="rateValue">0</span></label>
+        <input type="range" id="rate" name="rate" min="-100" max="100" value="0">
+    </div>
+
+    <div class="slider-container">
+        <label for="pitch">语调: <span id="pitchValue">0</span></label>
+        <input type="range" id="pitch" name="pitch" min="-100" max="100" value="0">
+    </div>
+
+    <button type="button" onclick="generateAudio()">生成语音</button>
+</form>
+
+<div id="audioPlayer">
+    <audio controls>
+      <source id="audioSource" src="" type="audio/mpeg">
+      Your browser does not support the audio element.
+    </audio>
+</div>
+
+<div id="history">
+    <h2>历史记录</h2>
+    <button onclick="clearHistory()">清除历史</button>
+    <div id="historyItems"></div>
+</div>
+
+<script>
+document.getElementById('rate').addEventListener('input', function() {
+    document.getElementById('rateValue').textContent = this.value;
+});
+
+document.getElementById('pitch').addEventListener('input', function() {
+    document.getElementById('pitchValue').textContent = this.value;
+});
+
+function generateAudio() {
+    const text = document.getElementById('text').value;
+    const voice = document.getElementById('voice').value;
+    const rate = document.getElementById('rate').value;
+    const pitch = document.getElementById('pitch').value;
+
+    const url = `https://t.leftsite.cn/tts?t=${encodeURIComponent(text)}&v=${voice}&r=${rate}&p=${pitch}&o=audio-24khz-48kbitrate-mono-mp3`;
+
+    const audioSource = document.getElementById('audioSource');
+    audioSource.src = url;
+
+    const audioElement = document.querySelector('#audioPlayer audio');
+    audioElement.load();
+    audioElement.play();
+
+    addHistoryItem(text, url);
+}
+
+function addHistoryItem(text, audioURL) {
+    const historyItems = document.getElementById('historyItems');
+    const historyItem = document.createElement('div');
+    historyItem.className = 'history-item';
+    historyItem.innerHTML = `
+        <span>${text}</span>
+        <div>
+            <button onclick="playAudio('${audioURL}')">播放</button>
+            <button onclick="downloadAudio('${audioURL}')">下载</button>
+        </div>
+    `;
+    historyItems.appendChild(historyItem);
+}
+
+function playAudio(audioURL) {
+    const audioSource = document.getElementById('audioSource');
+    audioSource.src = audioURL;
+
+    const audioElement = document.querySelector('#audioPlayer audio');
+    audioElement.load();
+    audioElement.play();
+}
+
+function downloadAudio(audioURL) {
+    const link = document.createElement('a');
+    link.href = audioURL;
+    link.download = 'audio.mp3';
+    link.click();
+}
+
+function clearHistory() {
+    document.getElementById('historyItems').innerHTML = '';
+}
+</script>
+
+</body>
+</html>
