@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快手AI图生图</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .button-disabled {
+            background-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+        .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-r from-green-400 to-blue-500 font-sans">
+    <div class="main-container">
+        <div class="max-w-lg w-full p-6 bg-white bg-opacity-75 rounded-lg shadow-xl">
+            <h1 class="text-3xl font-bold text-center mb-6">快手AI图生图</h1>
+            <div class="mb-4">
+                <label for="model" class="block text-gray-700 mb-2">选择风格:</label>
+                <select id="model" class="block w-full p-3 border border-gray-300 rounded-lg shadow-sm">
+                    <option value="diffusion_xc">炫彩</option>
+                    <option value="diffusion_cutemoe1">可爱Q萌</option>
+                    <option value="diffusion_jpa2">次元漫画</option>
+                    <option value="diffusion_weddinggirl">女神婚纱</option>
+                    <option value="diffusion_haru">春日女神</option>
+                    <option value="diffusion_cheongsam">旗袍女神</option>
+                    <option value="diffusion_cute_bunny">兔子风格</option>
+                    <option value="diffusion_cute_lantern">元宵节</option>
+                    <option value="diffusion_redpack">红包</option>
+                    <option value="diffusion_diffuser_cutemoe">春节</option>
+                    <option value="diffusion_cute_xmas">圣诞</option>
+                    <option value="diffusion_chinese_style">国风</option>
+                    <option value="diffusion_gufeng">古风</option>
+                    <option value="diffusion_valentine">情侣</option>
+                    <option value="diffusion_jpagender_safe">变性</option>
+                    <option value="diffusion_my2023">下一站</option>
+                    <option value="diffusion_soccer">足球风</option>
+                    <option value="diffusion_soccerrand">球员</option>
+                    <option value="diffusion_jpa_xmas">圣诞日漫</option>
+                    <option value="diffusion_xmas_rand2">圣诞美漫</option>
+                    <option value="diffusion_wedding">婚纱照</option>
+                    <option value="diffusion_jpaany_3dphoto_safe">万物拟人</option>
+                    <option value="diffusion_jpapet_safe">宠物拟人</option>
+                    <option value="diffusion_human2pet">人变狗</option>
+                    <option value="diffusion_shinkai">新海诚</option>
+                    <option value="diffusion_chahua0">插画</option>
+                    <option value="diffusion_monet">莫奈</option>
+                    <option value="diffusion_vangogh">梵高</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="file" class="block text-gray-700 mb-2">上传图片:</label>
+                <input type="file" id="file" accept="image/*" class="block w-full p-3 border border-gray-300 rounded-lg shadow-sm" onchange="uploadFile()">
+            </div>
+            <div id="uploading" class="mt-4 text-center hidden">正在上传图片，请稍候...</div>
+            <button id="generateBtn" class="w-full bg-green-500 text-white py-3 rounded-lg shadow-lg hover:bg-green-600 hidden" onclick="generateImage()">
+                生成图片
+            </button>
+            <div id="loading" class="mt-4 text-center hidden">正在生成图片，请稍候...</div>
+            <div id="output" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('file');
+            const uploading = document.getElementById('uploading');
+            const generateBtn = document.getElementById('generateBtn');
+
+            if (fileInput.files.length === 0) {
+                alert('请上传一张图片');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (file.size > 5 * 1024 * 1024) { // 限制文件大小为5MB
+                alert('文件大小不能超过5MB');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            uploading.classList.remove('hidden');
+
+            try {
+                console.log('Uploading file...');
+                const uploadResponse = await fetch('proxy.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('图片上传失败');
+                }
+
+                const uploadData = await uploadResponse.json();
+                if (uploadData.error) {
+                    throw new Error(uploadData.error);
+                }
+
+                const imageUrl = `https://image.daosuijun.top${uploadData[0].src}`;
+                console.log('Image URL:', imageUrl);
+
+                uploading.classList.add('hidden');
+                generateBtn.classList.remove('hidden');
+                document.getElementById('file').dataset.imageUrl = imageUrl;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('操作失败: ' + error.message);
+                uploading.classList.add('hidden');
+            }
+        }
+
+        async function generateImage() {
+            const fileInput = document.getElementById('file');
+            const model = document.getElementById('model').value;
+            const output = document.getElementById('output');
+            const loading = document.getElementById('loading');
+
+            if (!model) {
+                alert('请选择一个模型');
+                return;
+            }
+
+            const imageUrl = fileInput.dataset.imageUrl;
+
+            loading.classList.remove('hidden');
+            output.innerHTML = '';
+
+            try {
+                const apiResponse = await fetch('api.php?model=' + model + '&url=' + encodeURIComponent(imageUrl));
+
+                if (!apiResponse.ok) {
+                    throw new Error('生成图片失败');
+                }
+
+                const apiData = await apiResponse.json();
+                if (apiData.code !== 200) {
+                    throw new Error(apiData.msg || '生成图片失败');
+                }
+
+                const base64Image = apiData.data;
+                output.innerHTML = `<img src="${base64Image}" alt="Generated Image" class="w-full rounded-lg shadow-lg mt-4">`;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('操作失败: ' + error.message);
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
