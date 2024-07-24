@@ -345,6 +345,7 @@
             return encryptedstring;
         }
 
+
 function formatMessage(content) {
     // 检查内容是否包含LaTeX公式
     const containsLatex = /\$[\s\S]*?\$/.test(content);
@@ -372,6 +373,7 @@ function formatMessage(content) {
         return marked.parse(content, { breaks: true });
     }
 }
+
         function renderMathAndCode(element) {
             if (mathJaxLoaded && window.MathJax) {
                 MathJax.typesetPromise([element]).then(() => {
