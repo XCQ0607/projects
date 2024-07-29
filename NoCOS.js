@@ -1,6 +1,51 @@
 addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
+  if (event.request.headers.get('Upgrade') === 'websocket') {
+    return event.respondWith(handleWebSocket(event));
+  } else {
+    return event.respondWith(handleRequest(event.request));
+  }
+});
+
+async function handleWebSocket(event) {
+  const url = new URL(event.request.url);
+  let targetUrl = url.pathname.slice(1); // 移除开头的 '/'
+  
+  if (!targetUrl.startsWith('ws://') && !targetUrl.startsWith('wss://')) {
+    targetUrl = 'wss://' + targetUrl;
+  }
+
+  const pair = new WebSocketPair();
+  const [client, server] = Object.values(pair);
+
+  server.accept();
+
+  const targetWs = new WebSocket(targetUrl);
+
+  targetWs.addEventListener('open', () => {
+    server.send('Connected to target WebSocket');
+  });
+
+  targetWs.addEventListener('message', event => {
+    server.send(event.data);
+  });
+
+  server.addEventListener('message', event => {
+    targetWs.send(event.data);
+  });
+
+  server.addEventListener('close', () => {
+    targetWs.close();
+  });
+
+  targetWs.addEventListener('close', () => {
+    server.close();
+  });
+
+  return new Response(null, {
+    status: 101,
+    webSocket: client,
+  });
+}
 
 async function handleRequest(request) {
   const url = new URL(request.url)
@@ -31,6 +76,8 @@ async function handleRequest(request) {
     
     // 添加CORS头
     modifiedResponse.headers.set('Access-Control-Allow-Origin', '*')
+    modifiedResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    modifiedResponse.headers.set('Access-Control-Allow-Headers', '*')
     
     return modifiedResponse
   } catch (error) {
@@ -49,36 +96,57 @@ function generateFrontend() {
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
         }
         .container {
+            background-color: #fff;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
             text-align: center;
-            background-color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         input[type="text"] {
-            width: 300px;
-            padding: 0.5rem;
-            margin-right: 0.5rem;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
         button {
-            padding: 0.5rem 1rem;
-            background-color: #007bff;
-            color: white;
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            color: #fff;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
         }
         .author {
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            color: #666;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .author a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .author a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
